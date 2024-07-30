@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Ignis</string>
+    <string name="up_direction">Up</string>
+    <string name="down_direction">Down</string>
+    <string name="left_direction">Left</string>
+    <string name="right_direction">Right</string>
 </resources>
