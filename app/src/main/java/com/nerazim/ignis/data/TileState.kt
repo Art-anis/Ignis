@@ -1,5 +1,6 @@
 package com.nerazim.ignis.data
 
+//типы тайлов
 enum class TileType {
     EMPTY,
     WATER,
@@ -8,6 +9,7 @@ enum class TileType {
     AIR
 }
 
+//направление движения тайлов
 enum class MoveDirection {
     LEFT,
     RIGHT,
@@ -16,7 +18,5 @@ enum class MoveDirection {
     UNDEFINED
 }
 
-class TileState(var type: TileType, val coordinates: Pair<Int, Int>) {
-    fun onClick(newTile: TileType, direction: MoveDirection) {
-    }
-}
+//состояния тайла
+data class TileState(var type: TileType, val coordinates: Pair<Int, Int>)
