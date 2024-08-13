@@ -1,7 +1,6 @@
 package com.nerazim.ignis
 
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,30 +9,32 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.nerazim.ignis.data.BoardViewModel
 import com.nerazim.ignis.data.MoveDirection
-import com.nerazim.ignis.data.TileState
 import com.nerazim.ignis.data.TileType
 import com.nerazim.ignis.ui.theme.IgnisTheme
 
@@ -45,9 +46,20 @@ class MainActivity : ComponentActivity() {
         setContent {
             IgnisTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Board(
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        val viewModel: BoardViewModel = viewModel(factory = AppViewModelProvider.Factory)
+                        Board(
+                            modifier = Modifier
+                                .padding(innerPadding)
+                                .fillMaxWidth(),
+                            viewModel = viewModel
+                        )
+                        Button(onClick = viewModel::resetGame) {
+                            Text("Reset")
+                        }
+                    }
                 }
             }
         }
@@ -86,57 +98,72 @@ fun Board(
                 TileType.FIRE -> painterResource(id = R.drawable.fire_tile)
                 TileType.EARTH -> painterResource(id = R.drawable.earth_tile)
                 TileType.AIR -> painterResource(id = R.drawable.air_tile)
+                TileType.DESTROYED -> painterResource(id = R.drawable.board_space_destroyed)
             }
             //картинка с тайлом
             Image(
                 painter = resource,
                 contentDescription = null,
-                alpha = if (tile.type == TileType.EMPTY) 0.7f else 1f, //делаем пустой тайл более прозрачным
+                alpha = if (tile.type == TileType.EMPTY || tile.type == TileType.DESTROYED) 0.7f else 1f, //делаем пустой тайл более прозрачным
                 modifier = Modifier
                     .border(border = BorderStroke(2.dp, Color.Black))
                     .clickable {
                         //определяем, крайний ли это тайл, сравнивая координаты с крайними
-                        val coordinates = tile.coordinates
-                        val left = coordinates.first == viewModel.startX
-                        val right = coordinates.first == viewModel.endX
-                        val up = coordinates.second == viewModel.startY
-                        val down = coordinates.second == viewModel.endY
-                        val edges = listOf(left, right, up, down)
-                        //если это угол, то открываем диалог с соответсвующими вариантами
-                        if (edges.count { it } == 2) {
-                            if (up && left) {
-                                option1.value = "Right"
-                                option2.value = "Down"
-                                openDirectionDialog.value = true
-                            }
-                            if (up && right) {
-                                option1.value = "Left"
-                                option2.value = "Down"
-                                openDirectionDialog.value = true
-                            }
-                            if (down && left) {
-                                option1.value = "Right"
-                                option2.value = "Up"
-                                openDirectionDialog.value = true
-                            }
-                            if (down && right) {
-                                option1.value = "Left"
-                                option2.value = "Up"
-                                openDirectionDialog.value = true
-                            }
-                        //если это не угол, но край, просто сдвигаем в нужном направлении
-                        } else if (edges.count { it } == 1) {
-                            val direction =
-                                if (up) MoveDirection.DOWN else if (down) MoveDirection.UP
-                                else if (left) MoveDirection.RIGHT else MoveDirection.LEFT
-                            //двигаем, если можно
-                            val status =
-                                viewModel.onClick(TileType.EARTH, tile.coordinates, direction)
-                            //если нельзя, выводим тост
-                            if (!status) {
-                                Toast
-                                    .makeText(context, "Illegal move!", Toast.LENGTH_LONG)
-                                    .show()
+                        if (tile.type != TileType.DESTROYED) {
+                            val coordinates = tile.coordinates
+                            val left = coordinates.first == viewModel.startX
+                            val right = coordinates.first == viewModel.endX
+                            val up = coordinates.second == viewModel.startY
+                            val down = coordinates.second == viewModel.endY
+                            val edges = listOf(left, right, up, down)
+                            //если это угол, то открываем диалог с соответсвующими вариантами
+                            if (edges.count { it } == 2) {
+                                if (up && left) {
+                                    option1.value = "Right"
+                                    option2.value = "Down"
+                                    openDirectionDialog.value = true
+                                }
+                                if (up && right) {
+                                    option1.value = "Left"
+                                    option2.value = "Down"
+                                    openDirectionDialog.value = true
+                                }
+                                if (down && left) {
+                                    option1.value = "Right"
+                                    option2.value = "Up"
+                                    openDirectionDialog.value = true
+                                }
+                                if (down && right) {
+                                    option1.value = "Left"
+                                    option2.value = "Up"
+                                    openDirectionDialog.value = true
+                                }
+                                //если это не угол, но край, просто сдвигаем в нужном направлении
+                            } else if (edges.count { it } == 1) {
+                                val direction =
+                                    if (up) MoveDirection.DOWN else if (down) MoveDirection.UP
+                                    else if (left) MoveDirection.RIGHT else MoveDirection.LEFT
+                                //двигаем, если можно
+                                val status =
+                                    viewModel.onClick(TileType.EARTH, tile.coordinates, direction)
+                                //выводим тост согласно статусу клика
+                                when (status) {
+                                    -1 -> Toast
+                                        .makeText(context, "Illegal move!", Toast.LENGTH_LONG)
+                                        .show()
+
+                                    1 -> Toast
+                                        .makeText(context, "It's a tie!", Toast.LENGTH_LONG)
+                                        .show()
+
+                                    2 -> Toast
+                                        .makeText(context, "Fire player won!", Toast.LENGTH_LONG)
+                                        .show()
+
+                                    3 -> Toast
+                                        .makeText(context, "Water player won!", Toast.LENGTH_LONG)
+                                        .show()
+                                }
                             }
                         }
                     }
@@ -152,9 +179,12 @@ fun Board(
                         openDirectionDialog.value = false
                         //после выбора пытаемся сдвинуть
                         val status = viewModel.onClick(TileType.EARTH, tile.coordinates, it.toMoveDirection())
-                        //если нельзя, выводим тост
-                        if (!status) {
-                            Toast.makeText(context, "Illegal move!", Toast.LENGTH_LONG).show()
+                        //выводим тост согласно статусу клика
+                        when (status) {
+                            -1 -> Toast.makeText(context, "Illegal move!", Toast.LENGTH_LONG).show()
+                            1 -> Toast.makeText(context, "It's a tie!", Toast.LENGTH_LONG).show()
+                            2 -> Toast.makeText(context, "Fire player won!", Toast.LENGTH_LONG).show()
+                            3 -> Toast.makeText(context, "Water player won!", Toast.LENGTH_LONG).show()
                         }
                     }
                 )

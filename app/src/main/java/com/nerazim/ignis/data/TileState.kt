@@ -3,6 +3,7 @@ package com.nerazim.ignis.data
 //типы тайлов
 enum class TileType {
     EMPTY,
+    DESTROYED,
     WATER,
     FIRE,
     EARTH,
