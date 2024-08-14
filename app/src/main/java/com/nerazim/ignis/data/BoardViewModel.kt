@@ -1,5 +1,9 @@
 package com.nerazim.ignis.data
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 
@@ -10,6 +14,11 @@ class BoardViewModel: ViewModel() {
     var startY = 0
     var endX = 5
     var endY = 5
+
+    var airTilesNumber = mutableIntStateOf(12)
+    var earthTilesNumber = mutableIntStateOf(9)
+
+    var selectedTile by mutableStateOf(TileType.EMPTY)
 
     private fun endTrigger(): Boolean {
         val pieces = _board.filter { it.type != TileType.DESTROYED }
@@ -22,6 +31,8 @@ class BoardViewModel: ViewModel() {
         for (i in 0 until _board.size) {
             _board[i] = _board[i].copy(type = startingBoard[i].type)
         }
+        airTilesNumber.intValue = 12
+        earthTilesNumber.intValue = 9
     }
 
     //удаление ряда
@@ -87,7 +98,7 @@ class BoardViewModel: ViewModel() {
         //если пустых мест нет, проверяем, можно ли вытолкнуть крайний тайл
         //нельзя вытолкнуть землю, а воздух можно вытолкнуть только землей
         if (list.count { it.type == TileType.EMPTY } == 0 &&
-            (list.last().type == TileType.EARTH || list.last().type == TileType.AIR && list[list.size - 2].type != TileType.EARTH)) {
+            (list.last().type == TileType.EARTH || list.last().type == TileType.AIR && newTile != TileType.EARTH)) {
             return -1
         }
         else {
@@ -121,7 +132,9 @@ class BoardViewModel: ViewModel() {
             }
             //ставим тайл на последнюю ячейку
             if (tempTile != TileType.EMPTY) {
+                temp = _board[currentIndex].type
                 _board[currentIndex] = _board[currentIndex].copy(type = tempTile)
+                tempTile = temp
             }
 
             var cutRowFlag = shouldRemoveRow()
@@ -132,11 +145,23 @@ class BoardViewModel: ViewModel() {
                 cutRowFlag = shouldRemoveRow()
                 cutColumnFlag = shouldRemoveColumn()
             }
+            if (newTile == TileType.EARTH && earthTilesNumber.intValue != 0) {
+                earthTilesNumber.intValue--
+            }
+            else {
+                airTilesNumber.intValue--
+            }
+
+            if (tempTile != TileType.EMPTY) {
+                earthTilesNumber.intValue++
+            }
+
             if (endTrigger()) {
                 return if (_board.count { it.type == TileType.DESTROYED } == 36) 1
                 else if (_board.count { it.type == TileType.WATER } == 0) 2
                 else 3
             }
+            selectedTile = TileType.EMPTY
         }
         return 0
     }
